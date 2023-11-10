@@ -1,0 +1,19 @@
+{
+  "name": "web-scraping-challenge",
+  "version": "1.0.0",
+  "description": "Challenge: Scrape tasks from Trello Board and create 5 of them in Todoist, all using Puppeteer.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Puppeteer",
+    "Automation",
+    "Web",
+    "Scraping",
+    "NodeJS"
+  ],
+  "author": "Luis Fernando Monjardin Guerrero",
+  "license": "ISC",
+  "type": "module" 
+}
