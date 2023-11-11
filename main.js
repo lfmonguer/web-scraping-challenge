@@ -4,7 +4,7 @@ const fs = require('fs');
 (async () => {
   // Part 1: Get tasks from Trello
   const trelloBrowser = await puppeteer.launch({
-    headless: "new",
+    headless: "true",
   });
   const trelloPage = await trelloBrowser.newPage();
   await trelloPage.goto('https://trello.com/b/QvHVksDa/personal-work-goals');
@@ -44,7 +44,7 @@ const fs = require('fs');
   }
 
   // Only for debug
-  console.log('Selected Tasks:', selectedTasks);
+  //console.log('Selected Tasks:', selectedTasks);
 
   // Save selected tasks to a JSON file
   const jsonSelectedTasks = JSON.stringify(selectedTasks, null, 2);
@@ -55,7 +55,7 @@ const fs = require('fs');
 
   // Part 2: Login to Todoist
   const todoistBrowser = await puppeteer.launch({
-    headless: "new",
+    headless: "true",
   });
   const todoistPage = await todoistBrowser.newPage();
   await todoistPage.setViewport({ width: 1200, height: 800 });
@@ -68,21 +68,21 @@ const fs = require('fs');
   await todoistPage.waitForSelector(emailInputSelector);
 
   // Only for debug
-  await todoistPage.screenshot({path: './1-Login_loadedPage.png'});
+  //await todoistPage.screenshot({ path: './1-Login_loadedPage.png' });
 
-  const userEmail = 'root.lfmonguer@gmail.com'; 
+  const userEmail = 'root.lfmonguer@gmail.com';
   await todoistPage.type(emailInputSelector, userEmail);
 
   // Find and fill the password input field
-  const passwordInputSelector = 'input[placeholder="Enter your password..."]'; 
-  const userPassword = 'devChallenge1'; 
+  const passwordInputSelector = 'input[placeholder="Enter your password..."]';
+  const userPassword = 'devChallenge1';
   await todoistPage.type(passwordInputSelector, userPassword);
 
   // Only for debug
-  await todoistPage.screenshot({path: './2-Login_filled.png'});
+ // await todoistPage.screenshot({ path: './2-Login_filled.png' });
 
   // You can also submit the form if needed
-  await todoistPage.keyboard.press('Enter');  
+  await todoistPage.keyboard.press('Enter');
 
   // Wait for navigation
   await todoistPage.waitForNavigation();
@@ -92,31 +92,56 @@ const fs = require('fs');
   await todoistPage.waitForSelector(buttonSelector, { visible: true });
 
   // Only for debug
-  await todoistPage.screenshot({path: './3-Login_success.png'});
+  //await todoistPage.screenshot({ path: './3-Login_success.png' });
+  const promise = new Promise(resolve => setTimeout(resolve, 1500));
+  // Execute the logic for adding tasks from Trello
+  const addTaskFromTrello = async (page, taskContent) => {
+    
+    await page.evaluate((taskContent) => {
+      // Find the button using its class name
+      const addButton = document.querySelector('.plus_add_button');
+      if (addButton) {
+        addButton.click();
+      } else {
+        console.error('Button not found');
+      }
 
-  const buttonElement = await todoistPage.$('button[data-add-task-navigation-element="true"]');
+      // Find the contenteditable div based on your structure
+      const contentEditableSelector = 'div[aria-label="Task name"]';
+      const contentEditableElement = document.querySelector(contentEditableSelector);
 
-  if (buttonElement) {
-    await buttonElement.click();
-    console.log("clicked")
+      // Click on the contenteditable element to focus it
+      contentEditableElement.click();
+
+      // Type the task content from Trello
+      contentEditableElement.textContent = taskContent;
+
+      // Wait for the button to be visible
+      const submitButtonSelector = 'button[data-testid="task-editor-submit-button"]';
+      const submitButton = document.querySelector(submitButtonSelector);
+      
+      if (submitButton) {
+        submitButton.click();
+      } else {
+        console.error('Submit button not found');
+      }
+    }, taskContent);
+
+    // Only for debug
+   // await page.screenshot({ path: `./${taskContent.replace(/\s/g, '-')}-AddButton_success.png` });
+  };
+  
+  // Add tasks from Trello
+  for (const task of selectedTasks) {
+    await addTaskFromTrello(todoistPage, task.content[0]);
+    await promise;
+    for (const task of selectedTasks) {
+      await addTaskFromTrello(todoistPage, task.content[0]);
+      await promise;      
+    }    
   }
-
-  // Only for debug
-  await todoistPage.screenshot({path: './4-AddButtonPress_success.png'});
-
-  // Find the contenteditable div based on your structure
-  const contentEditableSelector = 'div[contenteditable="true"][data-typist-editor="true"][role="textbox"][aria-readonly="false"][aria-multiline="true"][aria-label="Task name"]';
-  const contentEditableElement = await todoistPage.waitForSelector(contentEditableSelector);
-
-  // Click on the contenteditable element to focus it
-  await contentEditableElement.click();
-
-  // Type your desired text into the focused contenteditable element
-  await todoistPage.keyboard.type('Task Test');
-
-  // Only for debug
-  await todoistPage.screenshot({path: './5-AddButtonFilled_success.png'});
 
   // Close the Todoist browser
   await todoistBrowser.close();
 })();
+
